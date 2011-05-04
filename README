@@ -2,6 +2,15 @@ This is a torrent upload script! :)
 
 place .nb-upload.cfg in your home directory and edit it to fit you!
 
-USAGE: ./nb-upload /path/to/release [/path/to/rls2 ... /path/to/rlsX]
--s|--scene	- Set if scene rls
--t|--type	- Set type(numeric type) 1 = TV/Xvid
+This is for use with rTorrent. to automaticly upload torrent downloaded based on watch folder.
+
+add this to .rtorrent.rc:
+# Start rt-relay
+# watch dir with custom3 set.
+schedule = watch_directory_1,10,10,"load_start=/home/user/torrents/nbul/*.torrent,d.set_directory=/home/user/Uploads/,d.set_custom3=NBUL"
+
+# On finnished, run script.
+system.method.set_key = event.download.finished,upload_me,"execute=screen,-dmS,rtscripts,~/scripts/rtorrent/nb-upload.pl,\"$d.get_loaded_file=\",\"$d.get_base_path=\",$d.get_custom3=,&"
+# END
+
+edit it to fit you.
