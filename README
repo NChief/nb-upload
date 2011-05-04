@@ -1,1 +1,7 @@
-yeah!
+This is a torrent upload script! :)
+
+place .nb-upload.cfg in your home directory and edit it to fit you!
+
+USAGE: ./nb-upload /path/to/release [/path/to/rls2 ... /path/to/rlsX]
+-s|--scene	- Set if scene rls
+-t|--type	- Set type(numeric type) 1 = TV/Xvid
