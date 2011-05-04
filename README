@@ -1,7 +1,10 @@
 This is a torrent upload script! :)
 
+to get this: 
+git clone git://github.com/NChief/nb-upload.git usenet-relay
+cd usenet-relay
+git checkout usenet-relay
+
 place .nb-upload.cfg in your home directory and edit it to fit you!
 
-USAGE: ./nb-upload /path/to/release [/path/to/rls2 ... /path/to/rlsX]
--s|--scene	- Set if scene rls
--t|--type	- Set type(numeric type) 1 = TV/Xvid
+This is for use with SABnzb. place the script in script folder and set up rss or whatever and let SABnzb run script on finnish.
