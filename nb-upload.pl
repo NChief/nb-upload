@@ -83,21 +83,22 @@ sub trim($)
 }
 
 sub login {
-        print "Logging in...\n";
+        #print "Logging in...\n";
         $mech->default_header('Referer' => $loginref);
         $mech->post( $loginurl, [ "username" => $username, "password" => $password ] );
 	if ($mech->uri eq $site_url."/takelogin.php") { die("Login failed"); }
 }
 
 sub create_torrent {
-        print "Creating torrent...\n";
-        system("buildtorrent -q -p1 -a http://jalla.com \"$path\" \"$torrent_file_dir/$release.torrent\"");
-        return $torrent_file_dir."/".$release.".torrent";
+	# No need to create, we have one from rtorrent
+	my $torfile = $ARGV[0];
+	$torfile =~ s/^\///;
+	return $torfile;
 }
 
 sub upload {
         my ($torrent, $nfo, $descr, $type) = @_;
-        print "Uploading torrent...\n";
+        #print "Uploading torrent...\n";
         $mech->get($upload_form);
         #print $mech->content;
         $mech->submit_form(
@@ -121,7 +122,7 @@ sub upload {
 		return $uri;
 	} else {
 		if ($mech->content =~ /<h3>Mislykket\sopplasting!<\/h3>\n<p>(.*)<\/p>/) {
-			print $1."\n";
+			#print $1."\n";
 		}
 		die("Upload failed!");
 	}
@@ -129,7 +130,7 @@ sub upload {
 
 sub download_torrent {
         my $uri = shift;
-        print "Downloading torrent...\n";
+        #print "Downloading torrent...\n";
         $mech->get($uri);
         $mech->follow_link( url_regex => qr/download/i );
         unless($mech->success) {die("Could not download torrent");}
@@ -140,6 +141,10 @@ sub download_torrent {
 }
 
 sub strip_nfo {
+	# If rar-file = scene
+	if ($_ =~ m/.*\.rar$/) {
+		$scene = "yes";
+	}
         if ($_ =~ m/.*\.nfo$/) {
                 local $/=undef;
                 $nfo_file = $File::Find::name;
@@ -183,41 +188,23 @@ sub find_type {
         if ($release =~ m/XviD/i) { return "25" }
         if ($release =~ m/MP4/i) { return "26" }
         if ($release =~ m/MPEG/i) { return "24" }
+		
+		# Use if not found.
+		return "1";
 
         die("Unable to detect type, try -t|--type");
 }
 
-sub create_desc {
-        print "Ingen NFO, Lag en beskrivelse(avslutt med ^D):\n";
-        my @desc = <STDIN>;
-        my $descr = "";
-        foreach (@desc) { $descr .= $_ }
-        return $descr;
-}
-
-foreach (@ARGV) {
-	my $in = $_;
-	my $fpath;
-	if(-d $in) {
-		$fpath = trim(`cd "$in"\;pwd`);
-	} else {
-		my $temp = basename($in);
-		$in =~ s/$temp//;
-		if ($in) {
-			$fpath = trim(`cd $in\;pwd`);
-		} else {
-			$fpath = trim(`pwd`);
-		}
-		$fpath .= "/$temp";
-	}
-	#print $fpath." ::\n";
-	init1($fpath);
+if($ARGV[2] eq "NBUL") {
+	init1($ARGV[1]);
 	init2();
 }
 
 sub init2 {
 	if($is_dir) {
 	        find (\&strip_nfo, $path);
+	} else {
+		return;
 	}
 
 	login();
@@ -225,11 +212,8 @@ sub init2 {
 	my $link = "";
 	if($nfo_file && $rnfo) {
 	        $link = download_torrent(upload(create_torrent(), $nfo_file, $rnfo, find_type()));
-	} elsif ($scene) {
-	        $link = download_torrent(upload(create_torrent(), undef, create_desc(), find_type()));
 	} else {
-		die("Scene må inneholde nfo");
+	        system("echo \"NFO mangler......\" > $path/mangler.nfo");
+			init2();
 	}
-
-	print "Done! - $link\n";
 }
