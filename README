@@ -1,9 +1,7 @@
 This is a torrent upload script! :)
 
 to get this: 
-git clone git://github.com/NChief/nb-upload.git rt-relay
-cd rt-relay
-git checkout rt-relay
+git clone -b rt-relay git://github.com/NChief/nb-upload.git rt-relay
 
 place .nb-upload.cfg in your home directory and edit it to fit you!
 
