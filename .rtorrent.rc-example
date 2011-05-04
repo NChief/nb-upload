@@ -1,0 +1,22 @@
+# .rtorrent.rc example for rt-relay
+# by NChief
+
+directory = ~/downloads/Usortert
+session = ~/.rtorrent_sess
+session_on_completion = yes
+session_lock = yes
+schedule = session_save,240,300,session_save=
+
+# The rt-relay part
+schedule = watch_directory_1,10,10,"load_start=/home/user/torrents/nbul/*.torrent,d.set_directory=/home/user/Uploads/,d.set_custom3=NBUL"
+
+schedule = tied_directory,10,10,start_tied=
+schedule = untied_directory,10,10,close_untied=
+port_range = 38900-49977
+port_random = yes
+encryption = allow_incoming, try_outgoing
+
+# run nb-upload.pl on finnish.
+system.method.set_key = event.download.finished,upload_me,"execute=screen,-dmS,rtscripts,~/scripts/rtorrent/nb-upload.pl,\"$d.get_loaded_file=\",\"$d.get_base_path=\",$d.get_custom3=,&"
+
+log.execute = ~/.rtorrent.log
