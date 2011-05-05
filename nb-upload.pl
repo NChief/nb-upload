@@ -161,7 +161,7 @@ sub download_torrent {
 }
 
 sub fast_resume {
-	my $t = bdcode(shift);
+	my $t = bdecode(shift);
 	
 	$log->info("applying fast-resume");
 	
