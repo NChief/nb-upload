@@ -11,6 +11,7 @@ use Getopt::Long; # to handle arguments
 Getopt::Long::Configure ('bundling');
 use Config::Simple;
 use Convert::Bencode qw(bencode bdecode);
+use Log::Log4perl qw(get_logger);
 
 ## EDIT BELOW:::: ##
 
@@ -18,6 +19,10 @@ use Convert::Bencode qw(bencode bdecode);
 my $config_file = $ENV{"HOME"}."/.nb-upload.cfg";
 my $cfg = new Config::Simple();
 $cfg->read($config_file) or die "CONFIG ERROR: ".$cfg->error();
+
+# Initialize perl logging (Not IRC log)
+Log::Log4perl::init($config_file);
+my $log = Log::Log4perl->get_logger("nb-upload::Log");
 
 # Ditt brukernavn og passord på NB
 my $username = $cfg->param('username');
@@ -87,7 +92,10 @@ sub login {
         #print "Logging in...\n";
         $mech->default_header('Referer' => $loginref);
         $mech->post( $loginurl, [ "username" => $username, "password" => $password ] );
-	if ($mech->uri eq $site_url."/takelogin.php") { die("Login failed"); }
+	if ($mech->uri eq $site_url."/takelogin.php") { 
+		$log->error("Login failed!");
+		die("Login failed"); 
+	}
 }
 
 sub create_torrent {
@@ -99,6 +107,7 @@ sub create_torrent {
 
 sub upload {
         my ($torrent, $nfo, $descr, $type) = @_;
+		$log->info("Uploading torrent: $torrent");
         #print "Uploading torrent...\n";
         $mech->get($upload_form);
         #print $mech->content;
@@ -116,13 +125,17 @@ sub upload {
                        anonym => "yes"
                 }
         );
-        unless ($mech->success) {die("Could not upload");}
+        unless ($mech->success) {
+			$log->error("Could not upload: unable to reach site");
+			die("Could not upload");
+		}
         #print $mech->content;
 	my $uri = $mech->uri();
 	if ($uri =~ /details\.php/) {
 		return $uri;
 	} else {
 		if ($mech->content =~ /<h3>Mislykket\sopplasting!<\/h3>\n<p>(.*)<\/p>/) {
+			$log->error($1);
 			#print $1."\n";
 		}
 		die("Upload failed!");
@@ -131,6 +144,7 @@ sub upload {
 
 sub download_torrent {
         my $uri = shift;
+		$log->info("Downloading torrent from $uri");
         #print "Downloading torrent...\n";
         $mech->get($uri);
         $mech->follow_link( url_regex => qr/download/i );
@@ -140,54 +154,83 @@ sub download_torrent {
 		my $tfile = fast_resume($TORFILE);
 		print $TORFILE $tfile;
         close($TORFILE);
+		$log->info($torrent_auto_dir."/".$release.".torrent saved.");
         return $uri;
 }
 
 sub fast_resume {
 	my $t = bdcode(shift);
 	
+	$log->info("applying fast-resume");
+	
 	my $d = $path;
 	$d =~ s/$release//;
 	#$d .= "/" unless $d =~ m#/$#;
 	
-	die "No info key.\n" unless ref $t eq "HASH" and exists $t->{info};
+	#die "No info key.\n" unless ref $t eq "HASH" and exists $t->{info};
+	unless (ref $t eq "HASH" and exists $t->{info}) {
+		$log->error("fast-resume: No info key");
+		die "No info key.\n";
+	}
 	
-	my $psize = $t->{info}{"piece length"} or die "No piece length key.\n";
+	#my $psize = $t->{info}{"piece length"} or die "No piece length key.\n";
+	my $psize;
+	if($t->{info}{"piece length"}) {
+		$psize = $t->{info}{"piece length"};
+	} else {
+		$log->error("fast-resume: No piece length key");
+		die "No piece length key.\n";
+	}
 
 	my @files;
 	my $tsize = 0;
 	if (exists $t->{info}{files}) {
-		print STDERR "Multi file torrent: $t->{info}{name}\n";
+		#print STDERR "Multi file torrent: $t->{info}{name}\n";
+		$log->info("Multi file torrent: $t->{info}{name}");
 		for (@{$t->{info}{files}}) {
 			push @files, join "/", $t->{info}{name},@{$_->{path}};
 			$tsize += $_->{length};
 		}
 	} else {
-		print STDERR "Single file torrent: $t->{info}{name}\n";
+		#print STDERR "Single file torrent: $t->{info}{name}\n";
+		$log->info("Single file torrent: $t->{info}{name}");
 		@files = ($t->{info}{name});
 		$tsize = $t->{info}{length};
 	}
 	my $chunks = int(($tsize + $psize - 1) / $psize);
-	#print STDERR "Total size: $tsize bytes; $chunks chunks; ", scalar @files, " files.\n";
+	$log->info("Fast-resume info: Total size: $tsize bytes; $chunks chunks; ", scalar @files, " files.\n");
 	
-	die "Inconsistent piece information!\n" if $chunks*20 != length $t->{info}{pieces};
+	#die "Inconsistent piece information!\n" if $chunks*20 != length $t->{info}{pieces};
+	if ($chunks*20 != length $t->{info}{pieces}) {
+		$log->error("Inconsistent piece information!");
+		die "Inconsistent piece information!\n";
+	}
 	
 	$t->{libtorrent_resume}{bitfield} = $chunks;
 	for (0..$#files) {
-		die "$d$files[$_] not found.\n" unless -e "$d$files[$_]";
+		#die "$d$files[$_] not found.\n" unless -e "$d$files[$_]";
+		unless (-e "$d$files[$_]") {
+			$log->error("$d$files[$_] not found.");
+			die "$d$files[$_] not found.\n";
+		}
 		my $mtime = (stat "$d$files[$_]")[9];
 		$t->{libtorrent_resume}{files}[$_] = { priority => 2, mtime => $mtime };
 	};
+	$log->info("Fast resume applied");
 	
 	return bencode $t;
 }
 
 sub strip_nfo {
 	# If rar-file = scene
+	#$log->info("Searching for rar-files");
 	if ($_ =~ m/.*\.rar$/) {
+		$log->info("rar file found, assuming this is scene");
 		$scene = "yes";
 	}
+
         if ($_ =~ m/.*\.nfo$/) {
+				$log->info("nfo found, stripping..");
                 local $/=undef;
                 $nfo_file = $File::Find::name;
                 open(my $NFO, $nfo_file) || die("Could not open nfo: $!");
@@ -238,6 +281,7 @@ sub find_type {
 }
 
 if($ARGV[2] eq "NBUL") {
+	$log->info("Script is trying to upload: $ARGV[2]");
 	init1($ARGV[1]);
 	init2();
 }
@@ -246,6 +290,7 @@ sub init2 {
 	if($is_dir) {
 	        find (\&strip_nfo, $path);
 	} else {
+		$log->error("$path is not a directory");
 		return;
 	}
 
@@ -255,6 +300,7 @@ sub init2 {
 	if($nfo_file && $rnfo) {
 	        $link = download_torrent(upload(create_torrent(), $nfo_file, $rnfo, find_type()));
 	} else {
+			$log->warn("Nfo not found, making one..");
 	        system("echo \"NFO mangler......\" > $path/mangler.nfo");
 			init2();
 	}
