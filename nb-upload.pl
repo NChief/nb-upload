@@ -12,6 +12,7 @@ Getopt::Long::Configure ('bundling');
 use Config::Simple;
 use Convert::Bencode qw(bencode bdecode);
 use Log::Log4perl qw(get_logger);
+use JSON;
 
 ## EDIT BELOW:::: ##
 
@@ -35,6 +36,11 @@ my $torrent_file_dir = $cfg->param('torrent_file_dir');
 my $torrent_auto_dir = $cfg->param('torrent_auto_dir');
 
 my $site_url = $cfg->param('site_url');
+
+my $apikey;
+if ($cfg->param('use_tmdb') eq "yes") {
+	$apikey = $cfg->param('api_key');
+}
 
 
 ### DO NOT EDIT BELOW THIS LINE UNLESS YOU KNOW WHAT YOU ARE DOING ####
@@ -260,7 +266,15 @@ sub strip_nfo {
                         $result .= $_."\n";
                        }
                 }
-                $rnfo = $result;
+				if ($cfg->param('use_tmdb') eq "yes") {
+					$mech->get('http://api.themoviedb.org/2.1/Movie.getImages/en/json/'.$apikey.'/'.$1);
+					if ($mech->success) {
+						$log->warn("unable to access themoviedb");
+						my $json = JSON->new->utf8(0)->decode($mech->content);
+						$rnfo = '[imgw]'.$json->[0]->{'posters'}[0]->{'image'}->{'url'}.'[/imgw]'."\n";
+					}
+				}
+                $rnfo .= $result;
         }
 }
 
