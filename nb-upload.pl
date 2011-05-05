@@ -78,7 +78,7 @@ sub init1 {
 }
 
 # Create Mechanize
-my $mech = WWW::Mechanize->new();
+my $mech = WWW::Mechanize->new(autocheck => 0);
 
 sub trim($)
 {
@@ -132,12 +132,14 @@ sub upload {
         #print $mech->content;
 	my $uri = $mech->uri();
 	if ($uri =~ /details\.php/) {
+		$log->info("Upload successfull: $uri");
 		return $uri;
 	} else {
 		if ($mech->content =~ /<h3>Mislykket\sopplasting!<\/h3>\n<p>(.*)<\/p>/) {
 			$log->error($1);
 			#print $1."\n";
 		}
+		$log->error("Upload failed");
 		die("Upload failed!");
 	}
 }
@@ -299,6 +301,7 @@ sub init2 {
 	my $link = "";
 	if($nfo_file && $rnfo) {
 	        $link = download_torrent(upload(create_torrent(), $nfo_file, $rnfo, find_type()));
+			$log->info("Done! - $link");
 	} else {
 			$log->warn("Nfo not found, making one..");
 	        system("echo \"NFO mangler......\" > $path/mangler.nfo");
