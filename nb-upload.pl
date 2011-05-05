@@ -274,7 +274,7 @@ sub strip_nfo {
 							#$log->info("");
 							my $json = JSON->new->utf8(0)->decode($mech->content);
 							$rnfo = '[imgw]'.$json->[0]->{'posters'}[0]->{'image'}->{'url'}.'[/imgw]'."\n";
-						} else [
+						} else {
 							$log->warn("unable to access themoviedb");
 						}
 					}
