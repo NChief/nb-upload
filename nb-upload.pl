@@ -153,7 +153,7 @@ sub download_torrent {
         unless($mech->success) {die("Could not download torrent");}
         open(my $TORFILE, ">", $torrent_auto_dir."/".$release.".torrent") || die("Could not open file: $!");
         #print $TORFILE $mech->content;
-		my $tfile = fast_resume($TORFILE);
+		my $tfile = fast_resume($mech->content);
 		print $TORFILE $tfile;
         close($TORFILE);
 		$log->info($torrent_auto_dir."/".$release.".torrent saved.");
