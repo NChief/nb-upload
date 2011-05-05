@@ -10,6 +10,7 @@ use NFOStripper;
 use Getopt::Long; # to handle arguments
 Getopt::Long::Configure ('bundling');
 use Config::Simple;
+use Convert::Bencode qw(bencode bdecode);
 
 ## EDIT BELOW:::: ##
 
@@ -135,9 +136,50 @@ sub download_torrent {
         $mech->follow_link( url_regex => qr/download/i );
         unless($mech->success) {die("Could not download torrent");}
         open(my $TORFILE, ">", $torrent_auto_dir."/".$release.".torrent") || die("Could not open file: $!");
-        print $TORFILE $mech->content;
+        #print $TORFILE $mech->content;
+		my $tfile = fast_resume($TORFILE);
+		print $TORFILE $tfile;
         close($TORFILE);
         return $uri;
+}
+
+sub fast_resume {
+	my $t = bdcode(shift);
+	
+	my $d = $path;
+	$d =~ s/$release//;
+	#$d .= "/" unless $d =~ m#/$#;
+	
+	die "No info key.\n" unless ref $t eq "HASH" and exists $t->{info};
+	
+	my $psize = $t->{info}{"piece length"} or die "No piece length key.\n";
+
+	my @files;
+	my $tsize = 0;
+	if (exists $t->{info}{files}) {
+		print STDERR "Multi file torrent: $t->{info}{name}\n";
+		for (@{$t->{info}{files}}) {
+			push @files, join "/", $t->{info}{name},@{$_->{path}};
+			$tsize += $_->{length};
+		}
+	} else {
+		print STDERR "Single file torrent: $t->{info}{name}\n";
+		@files = ($t->{info}{name});
+		$tsize = $t->{info}{length};
+	}
+	my $chunks = int(($tsize + $psize - 1) / $psize);
+	#print STDERR "Total size: $tsize bytes; $chunks chunks; ", scalar @files, " files.\n";
+	
+	die "Inconsistent piece information!\n" if $chunks*20 != length $t->{info}{pieces};
+	
+	$t->{libtorrent_resume}{bitfield} = $chunks;
+	for (0..$#files) {
+		die "$d$files[$_] not found.\n" unless -e "$d$files[$_]";
+		my $mtime = (stat "$d$files[$_]")[9];
+		$t->{libtorrent_resume}{files}[$_] = { priority => 2, mtime => $mtime };
+	};
+	
+	return bencode $t;
 }
 
 sub strip_nfo {
