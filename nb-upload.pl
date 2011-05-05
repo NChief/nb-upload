@@ -267,11 +267,16 @@ sub strip_nfo {
                        }
                 }
 				if ($cfg->param('use_tmdb') eq "yes") {
-					$mech->get('http://api.themoviedb.org/2.1/Movie.getImages/en/json/'.$apikey.'/'.$1);
-					if ($mech->success) {
-						$log->warn("unable to access themoviedb");
-						my $json = JSON->new->utf8(0)->decode($mech->content);
-						$rnfo = '[imgw]'.$json->[0]->{'posters'}[0]->{'image'}->{'url'}.'[/imgw]'."\n";
+					if($result =~ /(tt\d{7})/) {
+						$mech->get('http://api.themoviedb.org/2.1/Movie.getImages/en/json/'.$apikey.'/'.$1);
+						$log->info("imdb link found, trying to get poster");
+						if ($mech->success) {
+							#$log->info("");
+							my $json = JSON->new->utf8(0)->decode($mech->content);
+							$rnfo = '[imgw]'.$json->[0]->{'posters'}[0]->{'image'}->{'url'}.'[/imgw]'."\n";
+						} else [
+							$log->warn("unable to access themoviedb");
+						}
 					}
 				}
                 $rnfo .= $result;
