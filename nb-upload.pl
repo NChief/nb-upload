@@ -108,7 +108,7 @@ sub login {
 sub create_torrent {
 	# No need to create, we have one from rtorrent
 	my $torfile = $ARGV[0];
-	$torfile =~ s/^\///;
+	$torfile =~ s/\/\//\//g;
 	return $torfile;
 }
 
