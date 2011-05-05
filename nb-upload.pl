@@ -286,7 +286,7 @@ sub strip_nfo {
 sub find_type {
         #my $release = shift;
         if ($type) { return $type }
-        if ($release =~ m/(BluRay|Blu-Ray)/i) { return "19" }
+        #if ($release =~ m/(BluRay|Blu-Ray)/i) { return "19" }
         if ($release =~ m/(PDTV|HDTV)\.XviD/i) { return "1" }
         if ($release =~ m/(PDTV|HDTV)\.x264/i) { return "29" }
         if ($release =~ m/S\d.*(PAL|NTSC)\.DVDR/i) { return "27" }
