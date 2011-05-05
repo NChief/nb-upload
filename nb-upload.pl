@@ -63,6 +63,7 @@ my ($path, $release, $is_dir);
 sub init1 {
 	$path = shift;
 	$release = basename($path);
+	$log->info("Trying to upload $release");
 
 	$is_dir = 0;
 	$rnfo = "";
@@ -283,7 +284,7 @@ sub find_type {
 }
 
 if($ARGV[2] eq "NBUL") {
-	$log->info("Script is trying to upload: $ARGV[2]");
+	#$log->info("Script is trying to upload: $ARGV[2]");
 	init1($ARGV[1]);
 	init2();
 }
