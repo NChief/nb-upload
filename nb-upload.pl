@@ -10,6 +10,8 @@ use NFOStripper;
 use Getopt::Long; # to handle arguments
 Getopt::Long::Configure ('bundling');
 use Config::Simple;
+use Convert::Bencode qw(bencode bdecode);
+use JSON;
 
 ## EDIT BELOW:::: ##
 
@@ -30,6 +32,10 @@ my $torrent_auto_dir = $cfg->param('torrent_auto_dir');
 
 my $site_url = $cfg->param('site_url');
 
+my $apikey;
+if ($cfg->param('use_tmdb') eq "yes") {
+	$apikey = $cfg->param('api_key');
+}
 
 ### DO NOT EDIT BELOW THIS LINE UNLESS YOU KNOW WHAT YOU ARE DOING ####
 #######################################################################
@@ -72,7 +78,7 @@ sub init1 {
 }
 
 # Create Mechanize
-my $mech = WWW::Mechanize->new();
+my $mech = WWW::Mechanize->new(autocheck => 0);
 
 sub trim($)
 {
@@ -134,9 +140,74 @@ sub download_torrent {
         $mech->follow_link( url_regex => qr/download/i );
         unless($mech->success) {die("Could not download torrent");}
         open(my $TORFILE, ">", $torrent_auto_dir."/".$release.".torrent") || die("Could not open file: $!");
-        print $TORFILE $mech->content;
+        #print $TORFILE $mech->content;
+		my $tfile = fast_resume($mech->content);
+		print $TORFILE $tfile;
         close($TORFILE);
         return $uri;
+}
+
+sub fast_resume {
+	my $t = bdecode(shift);
+	
+	$log->info("applying fast-resume");
+	
+	my $d = $path;
+	$d =~ s/$release//;
+	#$d .= "/" unless $d =~ m#/$#;
+	
+	#die "No info key.\n" unless ref $t eq "HASH" and exists $t->{info};
+	unless (ref $t eq "HASH" and exists $t->{info}) {
+		$log->error("fast-resume: No info key");
+		die "No info key.\n";
+	}
+	
+	#my $psize = $t->{info}{"piece length"} or die "No piece length key.\n";
+	my $psize;
+	if($t->{info}{"piece length"}) {
+		$psize = $t->{info}{"piece length"};
+	} else {
+		$log->error("fast-resume: No piece length key");
+		die "No piece length key.\n";
+	}
+
+	my @files;
+	my $tsize = 0;
+	if (exists $t->{info}{files}) {
+		#print STDERR "Multi file torrent: $t->{info}{name}\n";
+		$log->info("Multi file torrent: $t->{info}{name}");
+		for (@{$t->{info}{files}}) {
+			push @files, join "/", $t->{info}{name},@{$_->{path}};
+			$tsize += $_->{length};
+		}
+	} else {
+		#print STDERR "Single file torrent: $t->{info}{name}\n";
+		$log->info("Single file torrent: $t->{info}{name}");
+		@files = ($t->{info}{name});
+		$tsize = $t->{info}{length};
+	}
+	my $chunks = int(($tsize + $psize - 1) / $psize);
+	$log->info("Fast-resume info: Total size: $tsize bytes; $chunks chunks; ", scalar @files, " files.\n");
+	
+	#die "Inconsistent piece information!\n" if $chunks*20 != length $t->{info}{pieces};
+	if ($chunks*20 != length $t->{info}{pieces}) {
+		$log->error("Inconsistent piece information!");
+		die "Inconsistent piece information!\n";
+	}
+	
+	$t->{libtorrent_resume}{bitfield} = $chunks;
+	for (0..$#files) {
+		#die "$d$files[$_] not found.\n" unless -e "$d$files[$_]";
+		unless (-e "$d$files[$_]") {
+			$log->error("$d$files[$_] not found.");
+			die "$d$files[$_] not found.\n";
+		}
+		my $mtime = (stat "$d$files[$_]")[9];
+		$t->{libtorrent_resume}{files}[$_] = { priority => 2, mtime => $mtime };
+	};
+	$log->info("Fast resume applied");
+	
+	return bencode $t;
 }
 
 sub strip_nfo {
@@ -161,12 +232,26 @@ sub strip_nfo {
 
                 # Remove add.
                 my @nfoarr = split(/\n/, $result);
-                $result = "";
+                $result = '[pre]';
                 foreach (@nfoarr) {
                        unless ($_ =~ m/Advanced\sNFO\sStripper/) {
                         $result .= $_."\n";
                        }
                 }
+				$result .= '[/pre]';
+				if ($cfg->param('use_tmdb') eq "yes") {
+					if($result =~ /(tt\d{7})/) {
+						$mech->get('http://api.themoviedb.org/2.1/Movie.getImages/en/json/'.$apikey.'/'.$1);
+						$log->info("imdb link found, trying to get poster");
+						if ($mech->success) {
+							#$log->info("");
+							my $json = JSON->new->utf8(0)->decode($mech->content);
+							$rnfo = '[imgw]'.$json->[0]->{'posters'}[0]->{'image'}->{'url'}.'[/imgw]'."\n";
+						} else {
+							$log->warn("unable to access themoviedb");
+						}
+					}
+				}
                 $rnfo = $result;
         }
 }
@@ -174,7 +259,7 @@ sub strip_nfo {
 sub find_type {
         #my $release = shift;
         if ($type) { return $type }
-        if ($release =~ m/(BluRay|Blu-Ray)/i) { return "14" }
+        #if ($release =~ m/(BluRay|Blu-Ray)/i) { return "14" }
         if ($release =~ m/(PDTV|HDTV)\.XviD/i) { return "1" }
         if ($release =~ m/(PDTV|HDTV)\.x264/i) { return "29" }
         if ($release =~ m/S\d.*(PAL|NTSC)\.DVDR/i) { return "27" }
