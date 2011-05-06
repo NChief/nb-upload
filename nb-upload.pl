@@ -150,7 +150,7 @@ sub download_torrent {
 sub fast_resume {
 	my $t = bdecode(shift);
 	
-	$log->info("applying fast-resume");
+	#$log->info("applying fast-resume");
 	
 	my $d = $path;
 	$d =~ s/$release//;
@@ -158,7 +158,7 @@ sub fast_resume {
 	
 	#die "No info key.\n" unless ref $t eq "HASH" and exists $t->{info};
 	unless (ref $t eq "HASH" and exists $t->{info}) {
-		$log->error("fast-resume: No info key");
+		#$log->error("fast-resume: No info key");
 		die "No info key.\n";
 	}
 	
@@ -167,7 +167,7 @@ sub fast_resume {
 	if($t->{info}{"piece length"}) {
 		$psize = $t->{info}{"piece length"};
 	} else {
-		$log->error("fast-resume: No piece length key");
+		#$log->error("fast-resume: No piece length key");
 		die "No piece length key.\n";
 	}
 
@@ -175,23 +175,23 @@ sub fast_resume {
 	my $tsize = 0;
 	if (exists $t->{info}{files}) {
 		#print STDERR "Multi file torrent: $t->{info}{name}\n";
-		$log->info("Multi file torrent: $t->{info}{name}");
+		#$log->info("Multi file torrent: $t->{info}{name}");
 		for (@{$t->{info}{files}}) {
 			push @files, join "/", $t->{info}{name},@{$_->{path}};
 			$tsize += $_->{length};
 		}
 	} else {
 		#print STDERR "Single file torrent: $t->{info}{name}\n";
-		$log->info("Single file torrent: $t->{info}{name}");
+		#$log->info("Single file torrent: $t->{info}{name}");
 		@files = ($t->{info}{name});
 		$tsize = $t->{info}{length};
 	}
 	my $chunks = int(($tsize + $psize - 1) / $psize);
-	$log->info("Fast-resume info: Total size: $tsize bytes; $chunks chunks; ", scalar @files, " files.\n");
+	#$log->info("Fast-resume info: Total size: $tsize bytes; $chunks chunks; ", scalar @files, " files.\n");
 	
 	#die "Inconsistent piece information!\n" if $chunks*20 != length $t->{info}{pieces};
 	if ($chunks*20 != length $t->{info}{pieces}) {
-		$log->error("Inconsistent piece information!");
+		#$log->error("Inconsistent piece information!");
 		die "Inconsistent piece information!\n";
 	}
 	
@@ -199,13 +199,13 @@ sub fast_resume {
 	for (0..$#files) {
 		#die "$d$files[$_] not found.\n" unless -e "$d$files[$_]";
 		unless (-e "$d$files[$_]") {
-			$log->error("$d$files[$_] not found.");
+			#$log->error("$d$files[$_] not found.");
 			die "$d$files[$_] not found.\n";
 		}
 		my $mtime = (stat "$d$files[$_]")[9];
 		$t->{libtorrent_resume}{files}[$_] = { priority => 2, mtime => $mtime };
 	};
-	$log->info("Fast resume applied");
+	#$log->info("Fast resume applied");
 	
 	return bencode $t;
 }
@@ -242,13 +242,13 @@ sub strip_nfo {
 				if ($cfg->param('use_tmdb') eq "yes") {
 					if($result =~ /(tt\d{7})/) {
 						$mech->get('http://api.themoviedb.org/2.1/Movie.getImages/en/json/'.$apikey.'/'.$1);
-						$log->info("imdb link found, trying to get poster");
+						#$log->info("imdb link found, trying to get poster");
 						if ($mech->success) {
 							#$log->info("");
 							my $json = JSON->new->utf8(0)->decode($mech->content);
 							$rnfo = '[imgw]'.$json->[0]->{'posters'}[0]->{'image'}->{'url'}.'[/imgw]'."\n";
 						} else {
-							$log->warn("unable to access themoviedb");
+							#$log->warn("unable to access themoviedb");
 						}
 					}
 				}
