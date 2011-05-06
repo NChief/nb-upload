@@ -260,12 +260,13 @@ sub strip_nfo {
 
                 # Remove add.
                 my @nfoarr = split(/\n/, $result);
-                $result = "";
+                $result = '[pre]';
                 foreach (@nfoarr) {
                        unless ($_ =~ m/Advanced\sNFO\sStripper/) {
                         $result .= $_."\n";
                        }
                 }
+				$result .= '[/pre]';
 				if ($cfg->param('use_tmdb') eq "yes") {
 					if($result =~ /(tt\d{7})/) {
 						$mech->get('http://api.themoviedb.org/2.1/Movie.getImages/en/json/'.$apikey.'/'.$1);
