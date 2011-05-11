@@ -301,6 +301,12 @@ sub strip_nfo {
         }
 }
 
+sub rawurlencode {
+	my $unencoded_url = shift;
+	my $url = URI::URL->new($unencoded_url);
+	return $url->as_string;
+}
+
 sub find_type {
         #my $release = shift;
         if ($type) { return $type }
