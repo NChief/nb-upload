@@ -309,12 +309,25 @@ sub init2 {
 
 	my $link = "";
 	if($nfo_file && $rnfo) {
-	        $link = download_torrent(upload(create_torrent(), $nfo_file, $rnfo, find_type()));
+	        $link = download_torrent(upload(create_torrent(), $nfo_file, toutf8($rnfo), find_type()));
 	} elsif ($scene) {
-	        $link = download_torrent(upload(create_torrent(), undef, create_desc(), find_type()));
+	        $link = download_torrent(upload(create_torrent(), undef, toutf8(create_desc()), find_type()));
 	} else {
 		die("Scene må inneholde nfo");
 	}
 
 	print "Done! - $link\n";
+}
+
+sub toutf8 {
+#takes: $from_encoding, $text
+#returns: $text in utf8
+    #my $encoding = shift;
+    my $text = shift;
+    #if ($encoding =~ /utf\-?8/i) {
+    #    return $text;
+    #}
+    #else {
+        return Encode::encode("ISO-8859-15", Encode::decode("UTF-8", $text));
+    #}
 }
