@@ -13,6 +13,8 @@ use Config::Simple;
 use Convert::Bencode qw(bencode bdecode);
 use Log::Log4perl qw(get_logger);
 use JSON;
+use URI::URL;
+use XML::Simple;
 
 ## EDIT BELOW:::: ##
 
@@ -280,7 +282,22 @@ sub strip_nfo {
 						}
 					}
 				}
+				if ($cfg->param('use_tvdb') eq "yes") {
+					if($release =~ /^(.*).S\d{1,}E?\d{0,}/) {
+						my $show = $1;
+						$show =~ s/\./ /g;
+						$mech->get('http://www.thetvdb.com/api/GetSeries.php?seriesname='.rawurlencode($show).'&language=no');
+						if($mech->success) {
+							my $xml = new XML::Simple;
+							my $data = $xml->XMLin($mech->content, ForceArray => 1);
+							if($data->{'Series'}[0]->{'banner'}[0]) {
+								$rnfo = '[img]http://thetvdb.com/banners/'.$data->{'Series'}[0]->{'banner'}[0].'[/img]'."\n";
+							}
+						}
+					}
+				}
                 $rnfo .= $result;
+				$result =~ s/nedlasting\.net//ig; # nedlasting sux
         }
 }
 
