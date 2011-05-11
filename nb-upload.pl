@@ -58,7 +58,7 @@ if ($scene) {
 }
 
 #indata
-my ($path, $release, $is_dir);
+my ($path, $release, $is_dir, $extension);
 
 sub init1 {
 	$path = shift;
@@ -73,7 +73,8 @@ sub init1 {
 	        $is_dir = 1;
 	} else {
 	        $release =~ m/.*(\..*)$/;
-	        $release =~ s/$1//;
+			$extension = $1;
+	        $release =~ s/$extension//;
 	}
 }
 
@@ -154,6 +155,9 @@ sub fast_resume {
 	
 	my $d = $path;
 	$d =~ s/$release//;
+	unless($is_dir) {
+		$d =~ s/$extension//;
+	}
 	#$d .= "/" unless $d =~ m#/$#;
 	
 	#die "No info key.\n" unless ref $t eq "HASH" and exists $t->{info};
