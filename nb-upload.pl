@@ -321,11 +321,24 @@ sub init2 {
 
 	my $link = "";
 	if($nfo_file && $rnfo) {
-	        $link = download_torrent(upload(create_torrent(), $nfo_file, $rnfo, find_type()));
+	        $link = download_torrent(upload(create_torrent(), $nfo_file, toutf8($rnfo), find_type()));
 			$log->info("Done! - $link");
 	} else {
 			$log->warn("Nfo not found, making one..");
 	        system("echo \"NFO mangler......\" > $path/mangler.nfo");
 			init2();
 	}
+}
+
+sub toutf8 {
+#takes: $from_encoding, $text
+#returns: $text in utf8
+    #my $encoding = shift;
+    my $text = shift;
+    #if ($encoding =~ /utf\-?8/i) {
+    #    return $text;
+    #}
+    #else {
+        return Encode::encode("ISO-8859-15", Encode::decode("UTF-8", $text));
+    #}
 }
