@@ -323,6 +323,7 @@ sub find_type {
 			if ($release =~ m/(PAL|NTSC)\.DVDR/i) {return "27" }
 		} else { #IS MOVIE
 			if ($release =~ m/(BluRay|Blu-Ray)/i) { return "19" }
+			if ($release =~ m/(PAL|NTSC)\.DVDR/i) {return "20" }
 			if ($release =~ m/x264/i) { return "28" }
 			if ($release =~ m/XviD/i) { return "25" }
 			if ($release =~ m/MP4/i) { return "26" }
