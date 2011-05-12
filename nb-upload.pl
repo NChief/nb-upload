@@ -286,13 +286,19 @@ sub strip_nfo {
 					if($release =~ /^(.*).S\d{1,}E?\d{0,}/) {
 						my $show = $1;
 						$show =~ s/\./ /g;
+						$log->info("Trying to fetch banner from TVDB for $show");
 						$mech->get('http://www.thetvdb.com/api/GetSeries.php?seriesname='.rawurlencode($show).'&language=no');
 						if($mech->success) {
 							my $xml = new XML::Simple;
 							my $data = $xml->XMLin($mech->content, ForceArray => 1);
 							if($data->{'Series'}[0]->{'banner'}[0]) {
 								$rnfo = '[img]http://thetvdb.com/banners/'.$data->{'Series'}[0]->{'banner'}[0].'[/img]'."\n";
+								$log->info("Banner found: ".$data->{'Series'}[0]->{'banner'}[0]);
+							} else {
+								$log->warn("Banner not found.");
 							}
+						} else {
+							$log->warn("Unable to access tvdb");
 						}
 					}
 				}
