@@ -310,15 +310,28 @@ sub rawurlencode {
 sub find_type {
         #my $release = shift;
         if ($type) { return $type }
+		
+		if ($release =~ m/S\d{1,}/i or $release =~ m/(PDTV|HDTV)/i) { #IS TV
+			if ($release =~ m/XviD/i) { return "1" }
+			if ($release =~ m/x264/i) { return "29" }
+			if ($release =~ m/(PAL|NTSC)\.DVDR/i) {return "27" }
+		} else { #IS MOVIE
+			if ($release =~ m/(BluRay|Blu-Ray)/i) { return "19" }
+			if ($release =~ m/x264/i) { return "28" }
+			if ($release =~ m/XviD/i) { return "25" }
+			if ($release =~ m/MP4/i) { return "26" }
+			if ($release =~ m/MPEG/i) { return "24" }
+		}
+		
         #if ($release =~ m/(BluRay|Blu-Ray)/i) { return "19" }
-        if ($release =~ m/(PDTV|HDTV)\.XviD/i) { return "1" }
-        if ($release =~ m/(PDTV|HDTV)\.x264/i) { return "29" }
-        if ($release =~ m/S\d.*(PAL|NTSC)\.DVDR/i) { return "27" }
-        if ($release =~ m/(PAL|NTSC)\.DVDR/i) { return "20" }
-        if ($release =~ m/x264/i) { return "28" }
-        if ($release =~ m/XviD/i) { return "25" }
-        if ($release =~ m/MP4/i) { return "26" }
-        if ($release =~ m/MPEG/i) { return "24" }
+        #if ($release =~ m/(PDTV|HDTV)\.XviD/i) { return "1" }
+        #if ($release =~ m/(PDTV|HDTV)\.x264/i) { return "29" }
+        #if ($release =~ m/S\d.*(PAL|NTSC)\.DVDR/i) { return "27" }
+        #if ($release =~ m/(PAL|NTSC)\.DVDR/i) { return "20" }
+        #if ($release =~ m/x264/i) { return "28" }
+        #if ($release =~ m/XviD/i) { return "25" }
+        #if ($release =~ m/MP4/i) { return "26" }
+        #if ($release =~ m/MPEG/i) { return "24" }
 		
 		# Use if not found.
 		return "1";
