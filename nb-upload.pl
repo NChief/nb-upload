@@ -14,6 +14,7 @@ use Convert::Bencode qw(bencode bdecode);
 use JSON;
 use URI::URL;
 use XML::Simple;
+use Cwd 'abs_path';
 
 ## EDIT BELOW:::: ##
 
@@ -308,22 +309,7 @@ sub create_desc {
 }
 
 foreach (@ARGV) {
-	my $in = $_;
-	my $fpath;
-	if(-d $in) {
-		$fpath = trim(`cd "$in"\;pwd`);
-	} else {
-		my $temp = basename($in);
-		$in =~ s/$temp//;
-		if ($in) {
-			$fpath = trim(`cd $in\;pwd`);
-		} else {
-			$fpath = trim(`pwd`);
-		}
-		$fpath .= "/$temp";
-	}
-	#print $fpath." ::\n";
-	init1($fpath);
+	init1(abs_path($_));
 	init2();
 }
 
