@@ -12,6 +12,8 @@ Getopt::Long::Configure ('bundling');
 use Config::Simple;
 use Convert::Bencode qw(bencode bdecode);
 use JSON;
+use URI::URL;
+use XML::Simple;
 
 ## EDIT BELOW:::: ##
 
