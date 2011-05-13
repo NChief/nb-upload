@@ -276,7 +276,8 @@ sub strip_nfo {
 						if ($mech->success) {
 							#$log->info("");
 							my $json = JSON->new->utf8(0)->decode($mech->content);
-							if($json->[0]->{'posters'}[0]->{'image'}->{'url'}) {
+							#if($json->[0]->{'posters'}[0]->{'image'}->{'url'}) {
+							unless($json->[0] eq "Nothing found.") {
 								$rnfo = '[imgw]'.$json->[0]->{'posters'}[0]->{'image'}->{'url'}.'[/imgw]'."\n";
 							} else {
 								$log->warn("poster not found");
