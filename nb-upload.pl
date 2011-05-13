@@ -15,6 +15,7 @@ use JSON;
 use URI::URL;
 use XML::Simple;
 use Cwd 'abs_path';
+use utf8;
 
 ## EDIT BELOW:::: ##
 
@@ -108,7 +109,9 @@ sub create_torrent {
 sub upload {
         my ($torrent, $nfo, $descr, $type) = @_;
         print "Uploading torrent...\n";
+		$mech->add_header('Accept-Charset' => 'iso-8859-1');
         $mech->get($upload_form);
+		$mech->add_header('Accept-Charset' => 'iso-8859-1');
         #print $mech->content;
         $mech->submit_form(
                 form_name => "upload",
@@ -361,6 +364,6 @@ sub toutf8 {
     #    return $text;
     #}
     #else {
-        return Encode::encode("ISO-8859-15", Encode::decode("UTF-8", $text));
+        return Encode::encode("iso-8859-1", Encode::decode("utf8", $text));
     #}
 }
