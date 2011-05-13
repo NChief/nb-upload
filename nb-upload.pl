@@ -109,9 +109,11 @@ sub create_torrent {
 sub upload {
         my ($torrent, $nfo, $descr, $type) = @_;
         print "Uploading torrent...\n";
-		$mech->add_header('Accept-Charset' => 'iso-8859-1');
+		#$mech->add_header('Accept-Charset' => 'iso-8859-1');
         $mech->get($upload_form);
 		$mech->add_header('Accept-Charset' => 'iso-8859-1');
+		my $form = $mech->form_name( "upload" );
+		$form->accept_charset("iso-8859-1");
         #print $mech->content;
         $mech->submit_form(
                 form_name => "upload",
@@ -326,9 +328,40 @@ sub find_type {
 sub create_desc {
         print "Ingen NFO, Lag en beskrivelse(avslutt med ^D):\n";
         my @desc = <STDIN>;
-        my $descr = "";
+		my $descr = "";
         foreach (@desc) { $descr .= $_ }
-        return $descr;
+		my $extra;
+		if ($cfg->param('use_tmdb') eq "yes") {
+			if($descr =~ /(tt\d{7})/) {
+				$mech->get('http://api.themoviedb.org/2.1/Movie.getImages/en/json/'.$apikey.'/'.$1);
+				#$log->info("imdb link found, trying to get poster");
+				if ($mech->success) {
+					#$log->info("");
+					my $json = JSON->new->utf8(0)->decode($mech->content);
+					unless($json->[0] eq "Nothing found.") {
+						$extra = '[imgw]'.$json->[0]->{'posters'}[0]->{'image'}->{'url'}.'[/imgw]'."\n";
+					}
+				} else {
+					#$log->warn("unable to access themoviedb");
+				}
+			}
+		}
+		if ($cfg->param('use_tvdb') eq "yes") {
+			if($release =~ /^(.*).S\d{1,}E?\d{0,}/) {
+				my $show = $1;
+				$show =~ s/\./ /g;
+				$mech->get('http://www.thetvdb.com/api/GetSeries.php?seriesname='.rawurlencode($show).'&language=no');
+				if($mech->success) {
+					my $xml = new XML::Simple;
+					my $data = $xml->XMLin($mech->content, ForceArray => 1);
+					if($data->{'Series'}[0]->{'banner'}[0]) {
+						$extra = '[img]http://thetvdb.com/banners/'.$data->{'Series'}[0]->{'banner'}[0].'[/img]'."\n";
+					}
+				}
+			}
+		}
+        
+        return $extra.$descr;
 }
 
 foreach (@ARGV) {
