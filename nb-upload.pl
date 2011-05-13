@@ -276,7 +276,7 @@ sub strip_nfo {
 						}
 					}
 				}
-                $rnfo = $result;
+                $rnfo .= $result;
 				$result =~ s/nedlasting\.net//ig; # nedlasting sux
         }
 }
