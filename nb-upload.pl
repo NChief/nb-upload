@@ -276,7 +276,11 @@ sub strip_nfo {
 						if ($mech->success) {
 							#$log->info("");
 							my $json = JSON->new->utf8(0)->decode($mech->content);
-							$rnfo = '[imgw]'.$json->[0]->{'posters'}[0]->{'image'}->{'url'}.'[/imgw]'."\n";
+							if($json->[0]->{'posters'}[0]->{'image'}->{'url'}) {
+								$rnfo = '[imgw]'.$json->[0]->{'posters'}[0]->{'image'}->{'url'}.'[/imgw]'."\n";
+							} else {
+								$log->warn("poster not found");
+							}
 						} else {
 							$log->warn("unable to access themoviedb");
 						}
@@ -368,7 +372,14 @@ sub init2 {
 			$log->info("Done! - $link");
 	} else {
 			$log->warn("Nfo not found, making one..");
-	        system("echo \"NFO mangler......\" > $path/mangler.nfo");
+	        #system("echo \"NFO mangler......\" > $path/mangler.nfo");
+			if(open(my $NFOF, ">", $path."/mangler.nfo")) {
+				print $NFOF "NFO mangler.........";
+				close($NFOF);
+			} else {
+				$log->error("Unable to make misssing nfo");
+				die("Unable to make missing nfo");
+			}
 			init2();
 	}
 }
