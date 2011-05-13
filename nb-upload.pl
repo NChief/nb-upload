@@ -145,8 +145,14 @@ sub upload {
 		return $uri;
 	} else {
 		if ($mech->content =~ /<h3>Mislykket\sopplasting!<\/h3>\n<p>(.*)<\/p>/) {
-			$log->error($1);
+			$log->error("Upload failed: ".$1);
+			die("Upload failed: ".$1);
 			#print $1."\n";
+		}
+		if($mech->content =~ /<h3>(.*)<\/h3>/) {
+			my $error = $1;
+			$log->error("Upload failed: ".$1);
+			die("Upload failed: ".$1);
 		}
 		$log->error("Upload failed");
 		die("Upload failed!");
@@ -327,12 +333,12 @@ sub find_type {
 			if ($release =~ m/x264/i) { return "29" }
 			if ($release =~ m/(PAL|NTSC)\.DVDR/i) {return "27" }
 		} else { #IS MOVIE
-			if ($release =~ m/(BluRay|Blu-Ray)/i) { return "19" }
-			if ($release =~ m/(PAL|NTSC)\.DVDR/i) {return "20" }
 			if ($release =~ m/x264/i) { return "28" }
 			if ($release =~ m/XviD/i) { return "25" }
 			if ($release =~ m/MP4/i) { return "26" }
 			if ($release =~ m/MPEG/i) { return "24" }
+			if ($release =~ m/(BluRay|Blu-Ray)/i) { return "19" }
+			if ($release =~ m/(PAL|NTSC)\.DVDR/i) {return "20" }
 		}
 		
         #if ($release =~ m/(BluRay|Blu-Ray)/i) { return "19" }
