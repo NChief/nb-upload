@@ -102,7 +102,7 @@ sub login {
 
 sub create_torrent {
         print "Creating torrent...\n";
-        system("buildtorrent -q -p1 -a http://jalla.com \"$path\" \"$torrent_file_dir/$release.torrent\"");
+        system("buildtorrent -q -p1 -L 41941304 -a http://jalla.com \"$path\" \"$torrent_file_dir/$release.torrent\"");
         return $torrent_file_dir."/".$release.".torrent";
 }
 
