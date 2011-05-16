@@ -17,8 +17,6 @@ use URI::URL;
 use XML::Simple;
 use Image::Imgur;
 
-## EDIT BELOW:::: ##
-
 # Handle config.
 my $config_file = $ENV{"HOME"}."/.nb-upload.cfg";
 my $cfg = new Config::Simple();
