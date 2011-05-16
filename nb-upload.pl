@@ -15,6 +15,7 @@ use Log::Log4perl qw(get_logger);
 use JSON;
 use URI::URL;
 use XML::Simple;
+use Image::Imgur;
 
 ## EDIT BELOW:::: ##
 
