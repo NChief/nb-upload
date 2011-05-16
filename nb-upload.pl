@@ -18,8 +18,6 @@ use Cwd 'abs_path';
 use utf8;
 use Image::Imgur;
 
-## EDIT BELOW:::: ##
-
 # Handle config.
 my $config_file = $ENV{"HOME"}."/.nb-upload.cfg";
 my $cfg = new Config::Simple();
