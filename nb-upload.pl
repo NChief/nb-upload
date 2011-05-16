@@ -48,7 +48,6 @@ if ($use_tvdb eq "yes") {
 		$imgurkey = $cfg->param('imgur_key');
 	} else {
 		$use_tvdb = "no";
-		$log->warn("you need to set imgur_key to use tvdb");
 	}
 }
 
