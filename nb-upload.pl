@@ -16,6 +16,7 @@ use URI::URL;
 use XML::Simple;
 use Cwd 'abs_path';
 use utf8;
+use Image::Imgur;
 
 ## EDIT BELOW:::: ##
 
@@ -39,6 +40,16 @@ my $site_url = $cfg->param('site_url');
 my $apikey;
 if ($cfg->param('use_tmdb') eq "yes") {
 	$apikey = $cfg->param('api_key');
+}
+my $imgurkey;
+my $use_tvdb = $cfg->param('use_tvdb');
+if ($use_tvdb eq "yes") {
+	if ($cfg->param('imgur_key')) {
+		$imgurkey = $cfg->param('imgur_key');
+	} else {
+		$use_tvdb = "no";
+		$log->warn("you need to set imgur_key to use tvdb");
+	}
 }
 
 ### DO NOT EDIT BELOW THIS LINE UNLESS YOU KNOW WHAT YOU ARE DOING ####
@@ -279,7 +290,10 @@ sub strip_nfo {
 							my $xml = new XML::Simple;
 							my $data = $xml->XMLin($mech->content, ForceArray => 1);
 							if($data->{'Series'}[0]->{'banner'}[0]) {
-								$rnfo = '[img]http://thetvdb.com/banners/'.$data->{'Series'}[0]->{'banner'}[0].'[/img]'."\n";
+								my $tvdburl = 'http://thetvdb.com/banners/'.$data->{'Series'}[0]->{'banner'}[0];
+								my $imgur = new Image::Imgur(key => $imgurkey);
+								my $imgururl = $imgur->upload($tvdburl);
+								$rnfo = '[img]'.$imgururl.'[/img]'."\n";
 							}
 						}
 					}
