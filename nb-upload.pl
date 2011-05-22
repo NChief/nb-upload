@@ -77,7 +77,9 @@ my ($path, $release, $is_dir);
 sub init1 {
 	$path = shift;
 	$release = basename($path);
-
+	if ($release =~ /\.\d$/) { #dupe
+		return 0;
+	}
 	$is_dir = 0;
 	$rnfo = "";
 	$nfo_file = "";
@@ -89,6 +91,7 @@ sub init1 {
 	        $release =~ m/.*(\..*)$/;
 	        $release =~ s/$1//;
 	}
+	return 1;
 }
 
 # Create Mechanize
@@ -319,8 +322,8 @@ sub find_type {
         die("Unable to detect type, try -t|--type");
 }
 
-init1($ARGV[0]);
-init2();
+init2() if (init1($ARGV[0]));
+#init2();
 
 sub init2 {
 	if($is_dir) {
