@@ -294,7 +294,7 @@ sub makescreen {
 	);
 	my $imgurl2thumb = $imgur->upload("thumb.png");
 	unlink("00000001.png", "00000002.png", "thumb.png");
-	$screens .= '[url='.$imgurl1.'][img]'.$imgurl1thumb.'[/img][/url]'."\n".'[url='.$imgurl2.'][img]'.$imgurl2thumb.'[/img][/url]'."\n";
+	$screens .= '[url='.$imgurl1.'][img]'.$imgurl1thumb.'[/img][/url][url='.$imgurl2.'][img]'.$imgurl2thumb.'[/img][/url]'."\n";
 }
 
 sub strip_nfo {
