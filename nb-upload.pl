@@ -16,6 +16,7 @@ use JSON;
 use URI::URL;
 use XML::Simple;
 use Image::Imgur;
+use Image::Thumbnail;
 
 # Handle config.
 my $config_file = $ENV{"HOME"}."/.nb-upload.cfg";
@@ -97,6 +98,7 @@ sub init1 {
 
 # Create Mechanize
 my $mech = WWW::Mechanize->new(autocheck => 0);
+my $screens;
 
 sub trim($)
 {
@@ -124,9 +126,15 @@ sub create_torrent {
 }
 
 sub upload {
-        my ($torrent, $nfo, $descr, $type) = @_;
+        my ($torrent, $nfo, $tdescr, $type) = @_;
 		$log->info("Uploading torrent: $torrent");
         #print "Uploading torrent...\n";
+		my $descr;
+		if ($screens) {
+			$descr = $tdescr."\n".$screens;
+		} else {
+			$descr = $tdescr;
+		}
         $mech->get($upload_form);
         #print $mech->content;
         $mech->submit_form(
@@ -247,6 +255,48 @@ sub fast_resume {
 	return bencode $t;
 }
 
+my $scount = 0;
+sub makescreen {
+	my $mediafile = shift;
+	unless ($cfg->param('imgur_key')) {
+		print "Make screens impossible without imgur_key\n";
+		return;
+	}
+	print "Makeing screenshots\n";
+	#$cfg->param('password');
+	my($ss1, $ss2);
+	if ($mediafile =~ /sample/i) {
+		$ss1 = 10;
+		$ss2 = 20;
+	} else {
+		$ss1 = 60;
+		$ss2 = 160;
+	}
+	$scount++;
+	system('mplayer -ss '.$ss1.' -vo png:z=9 -ao null -frames 2 ' . $mediafile . ' > /dev/null 2>&1');
+	my $imgur = new Image::Imgur(key => $imgurkey);
+	my $imgurl1 = $imgur->upload("00000002.png");
+	my $t1 = new Image::Thumbnail(
+		size       => 300,
+		create     => 1,
+		input      => '00000002.png',
+		outputpath => 'thumb.png'
+	);
+	my $imgurl1thumb = $imgur->upload("thumb.png");
+	unlink("00000001.png", "00000002.png", "thumb.png");
+	system('mplayer -ss '.$ss2.' -vo png:z=9 -ao null -frames 2 ' . $mediafile . ' > /dev/null 2>&1');
+	my $imgurl2 = $imgur->upload("00000002.png");
+	my $t2 = new Image::Thumbnail(
+		size       => 300,
+		create     => 1,
+		input      => '00000002.png',
+		outputpath => 'thumb.png'
+	);
+	my $imgurl2thumb = $imgur->upload("thumb.png");
+	unlink("00000001.png", "00000002.png", "thumb.png");
+	$screens .= '[url='.$imgurl1.'][img]'.$imgurl1thumb.'[/img][/url]'."\n".'[url='.$imgurl2.'][img]'.$imgurl2thumb.'[/img][/url]'."\n";
+}
+
 sub strip_nfo {
 	# If rar-file = scene
 	#$log->info("Searching for rar-files");
@@ -255,6 +305,9 @@ sub strip_nfo {
 		$scene = "yes";
 	}
 
+		if ($_ =~ m/.*\.(avi|mkv|mp4)$/ and $cfg->param('make_screens') eq "yes") {
+			makescreen($File::Find::name);
+		}
         if ($_ =~ m/.*\.nfo$/) {
 				$log->info("nfo found, stripping..");
                 local $/=undef;
@@ -369,6 +422,7 @@ sub find_type {
 
         die("Unable to detect type, try -t|--type");
 }
+
 
 if($ARGV[2] eq "NBUL") {
 	#$log->info("Script is trying to upload: $ARGV[2]");
