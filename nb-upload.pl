@@ -259,10 +259,10 @@ my $scount = 0;
 sub makescreen {
 	my $mediafile = shift;
 	unless ($cfg->param('imgur_key')) {
-		print "Make screens impossible without imgur_key\n";
+		$log->warn("Make screens impossible without imgur_key");
 		return;
 	}
-	print "Makeing screenshots\n";
+	$log->info("Makeing screenshots");
 	#$cfg->param('password');
 	my($ss1, $ss2);
 	if ($mediafile =~ /sample/i) {
