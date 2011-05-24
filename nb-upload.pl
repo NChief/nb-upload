@@ -12,11 +12,15 @@ Getopt::Long::Configure ('bundling');
 use Config::Simple;
 use Convert::Bencode qw(bencode bdecode);
 use Log::Log4perl qw(get_logger);
-use JSON;
 use URI::URL;
-use XML::Simple;
-use Image::Imgur;
-use Image::Thumbnail;
+#use JSON;
+use URI::URL;
+#use XML::Simple;
+use Cwd 'abs_path';
+use utf8;
+#use Image::Imgur;
+#use Image::Thumbnail;
+#use if $cfg->param('use_generator') eq "yes", Net::BitTorrent::Torrent::Generator;
 
 # Handle config.
 my $config_file = $ENV{"HOME"}."/.nb-upload.cfg";
@@ -262,7 +266,11 @@ sub makescreen {
 		$log->warn("Make screens impossible without imgur_key");
 		return;
 	}
+
 	$log->info("Makeing screenshots");
+	require Image::Thumbnail;
+	require Image::Imgur;
+	
 	#$cfg->param('password');
 	my($ss1, $ss2);
 	if ($mediafile =~ /sample/i) {
@@ -343,6 +351,7 @@ sub strip_nfo {
 						$log->info("imdb link found, trying to get poster");
 						if ($mech->success) {
 							#$log->info("");
+							require JSON;
 							my $json = JSON->new->utf8(0)->decode($mech->content);
 							#if($json->[0]->{'posters'}[0]->{'image'}->{'url'}) {
 							unless($json->[0] eq "Nothing found.") {
@@ -362,11 +371,13 @@ sub strip_nfo {
 						$log->info("Trying to fetch banner from TVDB for $show");
 						$mech->get('http://www.thetvdb.com/api/GetSeries.php?seriesname='.rawurlencode($show).'&language=no');
 						if($mech->success) {
+							require XML::Simple;
 							my $xml = new XML::Simple;
 							my $data = $xml->XMLin($mech->content, ForceArray => 1);
 							if($data->{'Series'}[0]->{'banner'}[0]) {
 								my $tvdburl = 'http://thetvdb.com/banners/'.$data->{'Series'}[0]->{'banner'}[0];
 								$log->info("Banner found: ".$data->{'Series'}[0]->{'banner'}[0]);
+								require Image::Imgur;
 								my $imgur = new Image::Imgur(key => $imgurkey);
 								my $imgururl = $imgur->upload($tvdburl);
 								$rnfo = '[img]'.$imgururl.'[/img]'."\n";
@@ -422,7 +433,6 @@ sub find_type {
 
         die("Unable to detect type, try -t|--type");
 }
-
 
 if($ARGV[2] eq "NBUL") {
 	#$log->info("Script is trying to upload: $ARGV[2]");
