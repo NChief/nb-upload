@@ -15,6 +15,7 @@ use JSON;
 use URI::URL;
 use XML::Simple;
 use Image::Imgur;
+use Image::Thumbnail;
 
 ## EDIT BELOW:::: ##
 
@@ -96,6 +97,7 @@ sub init1 {
 
 # Create Mechanize
 my $mech = WWW::Mechanize->new();
+my $screens;
 
 sub trim($)
 {
@@ -118,8 +120,14 @@ sub create_torrent {
 }
 
 sub upload {
-        my ($torrent, $nfo, $descr, $type) = @_;
+        my ($torrent, $nfo, $tdescr, $type) = @_;
         #print "Uploading torrent...\n";
+		my $descr;
+		if ($screens) {
+			$descr = $tdescr."\n".$screens;
+		} else {
+			$descr = $tdescr;
+		}
         $mech->get($upload_form);
         #print $mech->content;
         $mech->submit_form(
@@ -226,11 +234,56 @@ sub fast_resume {
 	return bencode $t;
 }
 
+sub makescreen {
+	my $mediafile = shift;
+	unless ($cfg->param('imgur_key')) {
+		#$log->warn("Make screens impossible without imgur_key");
+		return;
+	}
+	#$log->info("Makeing screenshots");
+	#$cfg->param('password');
+	my($ss1, $ss2);
+	if ($mediafile =~ /sample/i) {
+		$ss1 = 10;
+		$ss2 = 20;
+	} else {
+		$ss1 = 60;
+		$ss2 = 160;
+	}
+	#$scount++;
+	system('mplayer -ss '.$ss1.' -vo png:z=9 -ao null -frames 2 ' . $mediafile . ' > /dev/null 2>&1');
+	my $imgur = new Image::Imgur(key => $imgurkey);
+	my $imgurl1 = $imgur->upload("00000002.png");
+	my $t1 = new Image::Thumbnail(
+		size       => 300,
+		create     => 1,
+		input      => '00000002.png',
+		outputpath => 'thumb.png'
+	);
+	my $imgurl1thumb = $imgur->upload("thumb.png");
+	unlink("00000001.png", "00000002.png", "thumb.png");
+	system('mplayer -ss '.$ss2.' -vo png:z=9 -ao null -frames 2 ' . $mediafile . ' > /dev/null 2>&1');
+	my $imgurl2 = $imgur->upload("00000002.png");
+	my $t2 = new Image::Thumbnail(
+		size       => 300,
+		create     => 1,
+		input      => '00000002.png',
+		outputpath => 'thumb.png'
+	);
+	my $imgurl2thumb = $imgur->upload("thumb.png");
+	unlink("00000001.png", "00000002.png", "thumb.png");
+	$screens .= '[url='.$imgurl1.'][img]'.$imgurl1thumb.'[/img][/url][url='.$imgurl2.'][img]'.$imgurl2thumb.'[/img][/url]'."\n";
+}
+
 sub strip_nfo {
 	if ($_ =~ m/.*\.nzb$/) {
 		my $nzb = $File::Find::name;
 		system("rm -f $nzb");
 	}
+	if ($_ =~ m/.*\.(avi|mkv|mp4)$/ and $cfg->param('make_screens') eq "yes") {
+			makescreen($File::Find::name);
+	}
+
 	
         if ($_ =~ m/.*\.nfo$/) {
                 local $/=undef;
