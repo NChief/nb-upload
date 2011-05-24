@@ -18,6 +18,7 @@ use Cwd 'abs_path';
 use utf8;
 use Image::Imgur;
 use Image::Thumbnail;
+#use if $cfg->param('use_generator') eq "yes", Net::BitTorrent::Torrent::Generator;
 
 # Handle config.
 my $config_file = $ENV{"HOME"}."/.nb-upload.cfg";
@@ -112,7 +113,17 @@ sub login {
 
 sub create_torrent {
         print "Creating torrent...\n";
-        system("buildtorrent -q -p1 -L 41941304 -a http://jalla.com \"$path\" \"$torrent_file_dir/$release.torrent\"");
+		if ($cfg->param('use_buildtorrent') eq "yes") {
+			system("buildtorrent -q -p1 -L 41941304 -a http://jalla.com \"$path\" \"$torrent_file_dir/$release.torrent\"");
+		} else {
+			require Net::BitTorrent::Torrent::Generator;
+			my $t1 = Net::BitTorrent::Torrent::Generator->new( files => $path, announce => "http://jalla.com" );
+			$t1->_set_private;
+			$t1->piece_length("41941304");
+			open(my $TORRENT, ">", $torrent_file_dir."/".$release.".torrent") || die("Unable to create torrent");
+			syswrite $TORRENT, $t1->raw_data;
+			close($TORRENT);
+		}
         return $torrent_file_dir."/".$release.".torrent";
 }
 
