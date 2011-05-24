@@ -16,6 +16,7 @@ use URI::URL;
 use XML::Simple;
 use Image::Imgur;
 use Image::Thumbnail;
+#use if $cfg->param('use_generator') eq "yes", Net::BitTorrent::Torrent::Generator;
 
 ## EDIT BELOW:::: ##
 
@@ -115,7 +116,17 @@ sub login {
 }
 
 sub create_torrent {
-        system("buildtorrent -q -p1 -L 41941304 -a http://jalla.com $path $torrent_file_dir/$release.torrent");
+		if ($cfg->param('use_buildtorrent') eq "yes") {
+			system("buildtorrent -q -p1 -L 41941304 -a http://jalla.com \"$path\" \"$torrent_file_dir/$release.torrent\"");
+		} else {
+			require Net::BitTorrent::Torrent::Generator;
+			my $t1 = Net::BitTorrent::Torrent::Generator->new( files => $path, announce => "http://jalla.com" );
+			$t1->_set_private;
+			$t1->piece_length("41941304");
+			open(my $TORRENT, ">", $torrent_file_dir."/".$release.".torrent") || die("Unable to create torrent");
+			syswrite $TORRENT, $t1->raw_data;
+			close($TORRENT);
+		}
         return $torrent_file_dir."/".$release.".torrent";
 }
 
