@@ -306,7 +306,7 @@ sub makescreen {
 	);
 	my $imgurl2thumb = $imgur->upload("thumb.png");
 	unlink("00000001.png", "00000002.png", "thumb.png");
-	$screens .= '[url='.$imgurl1.'][img]'.$imgurl1thumb.'[/img][/url]'."\n".'[url='.$imgurl2.'][img]'.$imgurl2thumb.'[/img][/url]'."\n";
+	$screens .= '[url='.$imgurl1.'][img]'.$imgurl1thumb.'[/img][/url][url='.$imgurl2.'][img]'.$imgurl2thumb.'[/img][/url]'."\n";
 }
 
 sub strip_nfo {
@@ -458,7 +458,7 @@ sub init2 {
 	my $link = "";
 	if($nfo_file && $rnfo) {
 	        $link = download_torrent(upload(create_torrent(), $nfo_file, toutf8($rnfo), find_type()));
-	} elsif (!$scene) {
+	} elsif ($scene eq "no") {
 	        $link = download_torrent(upload(create_torrent(), undef, toutf8(create_desc()), find_type()));
 	} else {
 		die("Scene må inneholde nfo");
