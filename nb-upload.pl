@@ -489,6 +489,13 @@ sub init2 {
 	        $link = download_torrent(upload(create_torrent(), $nfo_file, toutf8($rnfo), find_type()));
 			$log->info("Done! - $link");
 	} else {
+			if (-e $cfg->param('nfo_path')."/".$release.".nfo") {
+				require File::Copy;
+				$log->warn("Using alternative nfo");
+				move($cfg->param('nfo_path')."/".$release.".nfo", $path."/".$release.".nfo");
+				init2();
+				return;
+			}
 			$log->warn("Nfo not found, making one..");
 	        #system("echo \"NFO mangler......\" > $path/mangler.nfo");
 			if(open(my $NFOF, ">", $path."/mangler.nfo")) {
