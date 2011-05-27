@@ -44,8 +44,10 @@ my $torrent_auto_dir = $cfg->param('torrent_auto_dir');
 my $site_url = $cfg->param('site_url');
 
 my $apikey;
-if ($cfg->param('use_tmdb') eq "yes") {
+my $use_tmdb;
+if ($cfg->param('use_tmdb') eq "yes" and $cfg->param('api_key')) {
 	$apikey = $cfg->param('api_key');
+	$use_tmdb = "yes";
 }
 my $imgurkey;
 my $use_tvdb = $cfg->param('use_tvdb');
@@ -134,10 +136,20 @@ sub upload {
 		$log->info("Uploading torrent: $torrent");
         #print "Uploading torrent...\n";
 		my $descr;
+		my $top;
+		if ($use_tvdb eq "yes") {
+			$top = get_banner();
+		}
+		if (!$top and $use_tmdb eq "yes") {
+			$top = get_poster($tdescr);
+		}
+		if ($top) {
+			$descr = $top."\n";
+		}
 		if ($screens) {
-			$descr = $tdescr."\n".$screens;
+			$descr .= $tdescr."\n".$screens;
 		} else {
-			$descr = $tdescr;
+			$descr .= $tdescr;
 		}
         $mech->get($upload_form);
         #print $mech->content;
@@ -345,54 +357,60 @@ sub strip_nfo {
                        }
                 }
 				$result .= '[/pre]';
-				if ($cfg->param('use_tmdb') eq "yes") {
-					if($result =~ /(tt\d{7})/) {
-						$mech->get('http://api.themoviedb.org/2.1/Movie.getImages/en/json/'.$apikey.'/'.$1);
-						$log->info("imdb link found, trying to get poster");
-						if ($mech->success) {
-							#$log->info("");
-							require JSON;
-							my $json = JSON->new->utf8(0)->decode($mech->content);
-							#if($json->[0]->{'posters'}[0]->{'image'}->{'url'}) {
-							unless($json->[0] eq "Nothing found.") {
-								$rnfo = '[imgw]'.$json->[0]->{'posters'}[0]->{'image'}->{'url'}.'[/imgw]'."\n";
-							} else {
-								$log->warn("poster not found");
-							}
-						} else {
-							$log->warn("unable to access themoviedb");
-						}
-					}
-				}
-				if ($use_tvdb eq "yes") {
-					if($release =~ /^(.*).S\d{1,}E?\d{0,}/) {
-						my $show = $1;
-						$show =~ s/\./ /g;
-						$log->info("Trying to fetch banner from TVDB for $show");
-						$mech->get('http://www.thetvdb.com/api/GetSeries.php?seriesname='.rawurlencode($show).'&language=no');
-						if($mech->success) {
-							require XML::Simple;
-							my $xml = new XML::Simple;
-							my $data = $xml->XMLin($mech->content, ForceArray => 1);
-							if($data->{'Series'}[0]->{'banner'}[0]) {
-								my $tvdburl = 'http://thetvdb.com/banners/'.$data->{'Series'}[0]->{'banner'}[0];
-								$log->info("Banner found: ".$data->{'Series'}[0]->{'banner'}[0]);
-								require Image::Imgur;
-								my $imgur = new Image::Imgur(key => $imgurkey);
-								my $imgururl = $imgur->upload($tvdburl);
-								$rnfo = '[img]'.$imgururl.'[/img]'."\n";
-								$log->info("Uploaded banner to imgur: ".$imgururl);
-							} else {
-								$log->warn("Banner not found.");
-							}
-						} else {
-							$log->warn("Unable to access tvdb");
-						}
-					}
-				}
+
                 $rnfo .= $result;
-				$rnfo =~ s/nedlasting\.net//ig; # nedlasting sux
+			$rnfo =~ s/nedlasting\.net//ig; # nedlasting sux
         }
+}
+
+sub get_banner {
+	if($release =~ /^(.*).S\d{1,}E?\d{0,}/) {
+		my $show = $1;
+		$show =~ s/\./ /g;
+		$log->info("Trying to fetch banner from TVDB");
+		$mech->get('http://www.thetvdb.com/api/GetSeries.php?seriesname='.rawurlencode($show).'&language=no');
+		if($mech->success) {
+			require XML::Simple;
+			my $xml = new XML::Simple;
+			my $data = $xml->XMLin($mech->content, ForceArray => 1);
+			if($data->{'Series'}[0]->{'banner'}[0]) {
+				my $tvdburl = 'http://thetvdb.com/banners/'.$data->{'Series'}[0]->{'banner'}[0];
+				$log->info("Banner found: ".$data->{'Series'}[0]->{'banner'}[0]);
+				require Image::Imgur;
+				my $imgur = new Image::Imgur(key => $imgurkey);
+				my $imgururl = $imgur->upload($tvdburl);
+				#$rnfo = '[img]'.$imgururl.'[/img]'."\n";
+				$log->info("Uploaded banner to imgur: ".$imgururl);
+				return '[img]'.$imgururl.'[/img]';
+			} else {
+				$log->warn("Banner not found.");
+			}	
+		} else {
+			$log->warn("Unable to access TVDB");
+		}
+	}
+	return;
+}
+
+sub get_poster {
+	my $info = shift;
+	if($info =~ /(tt\d{7})/) {
+		$mech->get('http://api.themoviedb.org/2.1/Movie.getImages/en/json/'.$apikey.'/'.$1);
+		$log->info("imdb link found, trying to get poster");
+		if ($mech->success) {
+			require JSON;
+			my $json = JSON->new->utf8(0)->decode($mech->content);
+			unless($json->[0] eq "Nothing found.") {
+				$log->info("Poster found: ".$json->[0]->{'posters'}[0]->{'image'}->{'url'});
+				return '[imgw]'.$json->[0]->{'posters'}[0]->{'image'}->{'url'}.'[/imgw]';
+			} else {
+				$log->warn("Poster not found.");
+			}
+		} else {
+			$log->warn("Unable to access TMDB");
+		}
+	}
+	return;
 }
 
 sub rawurlencode {
@@ -434,6 +452,7 @@ sub find_type {
         die("Unable to detect type, try -t|--type");
 }
 
+
 if($ARGV[2] eq "NBUL") {
 	#$log->info("Script is trying to upload: $ARGV[2]");
 	init1($ARGV[1]);
@@ -454,6 +473,9 @@ sub init2 {
 				$rnfo .= $_;
 			}
 			close($ALTNFO);
+			if ($path =~ /.*\.(mkv|avi|mp4)$/) {
+				makescreen($path);
+			}
 		} else {
 			$log->error("No NFO found");
 			return;
