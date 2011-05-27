@@ -444,8 +444,20 @@ sub init2 {
 	if($is_dir) {
 	        find (\&strip_nfo, $path);
 	} else {
-		$log->error("$path is not a directory");
-		return;
+		$log->warn("$path is not a directory");
+		$log->info("Trying to get alternative nfo");
+		if (-e $cfg->param('nfo_path')."/".$release.".nfo") {
+			$log->info("Alternative nfo found");
+			$nfo_file = $cfg->param('nfo_path')."/".$release.".nfo";
+			open(my $ALTNFO, "<", $cfg->param('nfo_path')."/".$release.".nfo");
+			while(<$ALTNFO>) {
+				$rnfo .= $_;
+			}
+			close($ALTNFO);
+		} else {
+			$log->error("No NFO found");
+			return;
+		}
 	}
 
 	login();
