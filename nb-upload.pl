@@ -199,6 +199,20 @@ sub download_torrent {
         $mech->get($uri);
         $mech->follow_link( url_regex => qr/download/i );
         unless($mech->success) {die("Could not download torrent");}
+		
+		if ($ARGV[3] eq "loaded") {
+			my @base_paths = $cfg->param('base_paths');
+			my @torrent_paths = $cfg->param('torrent_paths');
+			my $count = 0;
+			foreach (@base_paths) {
+				if ($path =~ /$_/) {
+					$torrent_auto_dir = $torrent_paths[$count];
+					$count++;
+					last;
+				}
+			}
+		}
+		
         open(my $TORFILE, ">", $torrent_auto_dir."/".$release.".torrent") || die("Could not open file: $!");
         #print $TORFILE $mech->content;
 		my $tfile = fast_resume($mech->content);
