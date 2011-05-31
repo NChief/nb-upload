@@ -207,9 +207,9 @@ sub download_torrent {
 			foreach (@base_paths) {
 				if ($path =~ /$_/) {
 					$torrent_auto_dir = $torrent_paths[$count];
-					$count++;
 					last;
 				}
+				$count++;
 			}
 		}
 		
