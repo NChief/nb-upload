@@ -506,7 +506,8 @@ sub init2 {
 			if (-e $cfg->param('nfo_path')."/".$release.".nfo") {
 				require File::Copy;
 				$log->warn("Using alternative nfo");
-				move($cfg->param('nfo_path')."/".$release.".nfo", $path."/".$release.".nfo");
+				#move($cfg->param('nfo_path')."/".$release.".nfo", $path."/".$release.".nfo");
+				system("mv '".$cfg->param('nfo_path')."/".$release.".nfo' '".$path."/".$release.".nfo'");
 				init2();
 				return;
 			}
