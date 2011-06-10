@@ -308,7 +308,7 @@ sub strip_nfo {
 		my $nzb = $File::Find::name;
 		system("rm -f $nzb");
 	}
-	# If rar-file = scene
+	# If rar-file = scen
 	#$log->info("Searching for rar-files");
 	if ($_ =~ m/.*\.rar$/) {
 		if ($unrar eq "yes") {
