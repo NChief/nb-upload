@@ -131,7 +131,7 @@ sub login {
 sub create_torrent {
 	# No need to create, we have one from rtorrent
 	if ($unrar eq "yes") {
-		print "Creating torrent...\n";
+		$log->info("Creating torrent...");
 		if ($cfg->param('use_buildtorrent') eq "yes") {
 			system("buildtorrent -q -p1 -L 41941304 -a http://jalla.com \"$path\" \"$torrent_file_dir/$release.torrent\"");
 		} else {
