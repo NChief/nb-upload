@@ -128,11 +128,35 @@ sub login {
 	}
 }
 
+sub create_filelist {
+	open( my $FILE, ">", "filelist.txt" ) or die($!);
+	opendir( my $DIR, $path ) or die($!);
+	while (my $filename = readdir($DIR)) {
+		unless ($filename =~ /(^\.|\.rar$|\.r\d\d$|\.sfv$)/) {
+			my $syspath = abs_path($path."/".$filename);
+			my $torpath = $filename;
+			if (-d $syspath) {
+				opendir(my $DIR2, $syspath) or die($!);
+				while (my $filename2 = readdir($DIR2)) {
+					print $FILE $syspath."/".$filename2."|".$torpath."/".$filename2."\n" unless($filename2 =~ /^\./);
+				}
+				closedir($DIR2);
+			} else {
+				print $FILE $syspath.'|'.$torpath."\n";
+			}
+		}
+	}
+	closedir($DIR);
+	close($FILE);
+	return $cfg->param('filelist');
+}
+
 sub create_torrent {
 	# No need to create, we have one from rtorrent
-	if ($unrar eq "yes") {
+	if ($unrar eq "yes") { #unless we unrar
 		$log->info("Creating torrent...");
 		if ($cfg->param('use_buildtorrent') eq "yes") {
+			my $filelist = create_filelist();
 			system("buildtorrent -q -p1 -L 41941304 -a http://jalla.com \"$path\" \"$torrent_file_dir/$release.torrent\"");
 		} else {
 			require Net::BitTorrent::Torrent::Generator;
@@ -351,11 +375,7 @@ sub makescreen {
 	$screens .= '[url='.$imgurl1.'][img]'.$imgurl1thumb.'[/img][/url][url='.$imgurl2.'][img]'.$imgurl2thumb.'[/img][/url]'."\n";
 }
 
-sub delete_rar {
-	if ($_ =~ m/.*\.(r\d\d|sfv)$/) {
-		unlink($File::Find::name);
-	}
-}
+
 
 sub strip_nfo {
 	# If rar-file = scene
@@ -365,9 +385,7 @@ sub strip_nfo {
 			$log->info("attempting to unrar");
 			system($unrar_bin." x ".$File::Find::name);
 			unless($? == -1) {
-				$log->info("unrar complete, deleting rar files");
-				unlink($File::Find::name);
-				find (\&delete_rar, $path);
+				$log->info("unrar complete");
 			} else {
 				$log->error("unrar failed: $!");
 				die("unrar failed: $!");
