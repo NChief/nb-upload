@@ -41,6 +41,10 @@ my $torrent_auto_dir = $cfg->param('torrent_auto_dir');
 
 my $site_url = $cfg->param('site_url');
 
+#rar
+my $unrar = $cfg->param('unrar');
+my $unrar_bin = $cfg->param('unrar_bin');
+
 my $apikey;
 if ($cfg->param('use_tmdb') eq "yes") {
 	$apikey = $cfg->param('api_key');
@@ -292,10 +296,36 @@ sub makescreen {
 	$screens .= '[url='.$imgurl1.'][img]'.$imgurl1thumb.'[/img][/url][url='.$imgurl2.'][img]'.$imgurl2thumb.'[/img][/url]'."\n";
 }
 
+sub delete_rar {
+	if ($_ =~ m/.*\.(r\d\d|sfv)$/) {
+		unlink($File::Find::name);
+	}
+}
+
 sub strip_nfo {
+
 	if ($_ =~ m/.*\.nzb$/) {
 		my $nzb = $File::Find::name;
 		system("rm -f $nzb");
+	}
+	# If rar-file = scene
+	#$log->info("Searching for rar-files");
+	if ($_ =~ m/.*\.rar$/) {
+		if ($unrar eq "yes") {
+			#$log->info("attempting to unrar");
+			system($unrar_bin." x ".$File::Find::name);
+			unless($? == -1) {
+				#$log->info("unrar complete, deleting rar files");
+				unlink($File::Find::name);
+				find (\&delete_rar, $path);
+			} else {
+				#$log->error("unrar failed: $!");
+				die("unrar failed: $!");
+			}
+		} else { #unrar is not marked as scene :(
+			#$log->info("rar file found, assuming this is scene");
+			$scene = "yes";
+		}
 	}
 	if ($_ =~ m/.*\.(avi|mkv|mp4)$/ and $cfg->param('make_screens') eq "yes") {
 			makescreen($File::Find::name);
