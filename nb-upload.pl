@@ -130,9 +130,25 @@ sub login {
 
 sub create_torrent {
 	# No need to create, we have one from rtorrent
-	my $torfile = $ARGV[0];
-	$torfile =~ s/\/\//\//g;
-	return $torfile;
+	if ($unrar eq "yes") {
+		print "Creating torrent...\n";
+		if ($cfg->param('use_buildtorrent') eq "yes") {
+			system("buildtorrent -q -p1 -L 41941304 -a http://jalla.com \"$path\" \"$torrent_file_dir/$release.torrent\"");
+		} else {
+			require Net::BitTorrent::Torrent::Generator;
+			my $t1 = Net::BitTorrent::Torrent::Generator->new( files => $path, announce => "http://jalla.com" );
+			$t1->_set_private;
+			$t1->piece_length("41941304");
+			open(my $TORRENT, ">", $torrent_file_dir."/".$release.".torrent") || die("Unable to create torrent");
+			syswrite $TORRENT, $t1->raw_data;
+			close($TORRENT);
+		}
+        return $torrent_file_dir."/".$release.".torrent";
+	} else {
+		my $torfile = $ARGV[0];
+		$torfile =~ s/\/\//\//g;
+		return $torfile;
+	}
 }
 
 sub upload {
