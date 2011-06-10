@@ -129,7 +129,7 @@ sub login {
 }
 
 sub create_filelist {
-	open( my $FILE, ">", "filelist.txt" ) or die($!);
+	open( my $FILE, ">", $cfg->param('filelist') ) or die($!);
 	opendir( my $DIR, $path ) or die($!);
 	while (my $filename = readdir($DIR)) {
 		unless ($filename =~ /(^\.|\.rar$|\.r\d\d$|\.sfv$)/) {
