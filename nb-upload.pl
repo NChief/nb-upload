@@ -159,13 +159,8 @@ sub create_torrent {
 			my $filelist = create_filelist();
 			system("buildtorrent -q -p1 -L 41941304 -a http://jalla.com -f \"$filelist\" -n \"$release\" \"$torrent_file_dir/$release.torrent\"");
 		} else {
-			require Net::BitTorrent::Torrent::Generator;
-			my $t1 = Net::BitTorrent::Torrent::Generator->new( files => $path, announce => "http://jalla.com" );
-			$t1->_set_private;
-			$t1->piece_length("41941304");
-			open(my $TORRENT, ">", $torrent_file_dir."/".$release.".torrent") || die("Unable to create torrent");
-			syswrite $TORRENT, $t1->raw_data;
-			close($TORRENT);
+			$log->error("Net::BitTorrent::Torrent::Generator does not support filelist");
+			die("Net::BitTorrent::Torrent::Generator does not support filelist");
 		}
         return $torrent_file_dir."/".$release.".torrent";
 	} else {
