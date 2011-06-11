@@ -157,7 +157,7 @@ sub create_torrent {
 		$log->info("Creating torrent...");
 		if ($cfg->param('use_buildtorrent') eq "yes") {
 			my $filelist = create_filelist();
-			system("buildtorrent -q -p1 -L 41941304 -a http://jalla.com \"$path\" \"$torrent_file_dir/$release.torrent\"");
+			system("buildtorrent -q -p1 -L 41941304 -a http://jalla.com -f \"$filelist\" -n \"$release\" \"$torrent_file_dir/$release.torrent\"");
 		} else {
 			require Net::BitTorrent::Torrent::Generator;
 			my $t1 = Net::BitTorrent::Torrent::Generator->new( files => $path, announce => "http://jalla.com" );
