@@ -53,6 +53,8 @@ if ($use_tvdb eq "yes") {
 	}
 }
 
+$ENV{PERL_LWP_SSL_VERIFY_HOSTNAME}=0;
+
 ### DO NOT EDIT BELOW THIS LINE UNLESS YOU KNOW WHAT YOU ARE DOING ####
 #######################################################################
 
