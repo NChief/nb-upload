@@ -316,6 +316,7 @@ sub strip_nfo {
 			makescreen($File::Find::name);
 		}
         if ($_ =~ m/.*\.nfo$/) {
+				return if $rnfo;
                 local $/=undef;
                 $nfo_file = $File::Find::name;
                 open(my $NFO, $nfo_file) || die("Could not open nfo: $!");
