@@ -395,7 +395,7 @@ sub strip_nfo {
 		if ($_ =~ m/.*\.(avi|mkv|mp4)$/ and $cfg->param('make_screens') eq "yes") {
 			makescreen($File::Find::name);
 		}
-        if ($_ =~ m/.*\.nfo$/) {
+        if ($_ =~ m/.*\.(nfo|txt)$/) {
 				$log->info("nfo found, stripping..");
                 local $/=undef;
                 $nfo_file = $File::Find::name;
